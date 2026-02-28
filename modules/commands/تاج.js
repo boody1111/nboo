@@ -5,14 +5,13 @@ module.exports.config = {
     name: "تاج",
     version: "1.0.1",
     hasPermssion: 0,
-    credits: "ChatGPT",
+    credits: "اليكسي",
     description: "تاج تلقائي كل 15 ثانية",
     commandCategory: "خدمات",
     usages: "تاج",
     cooldowns: 0
 };
 
-const dataPath = path.join(__dirname, "..", "..", "hitler.js");
 const tagText = `𝐴.R  ┋AI bot ┋ 
 الرد التلقائي 
 *𝗔𝘂𝘁𝗼 𝗥𝗲𝗽𝗹𝘆*
@@ -31,61 +30,29 @@ const tagText = `𝐴.R  ┋AI bot ┋
 .         .     𝑪𝒉𝒓𝒐𝒍𝒍𝒐 𝑳𝒖𝒄𝒊𝒍𝒇𝒆𝒓 𝑯𝒊𝒕𝒍𝒆𝒓𝕾.㊑!`;
 
 global.tagIntervals = global.tagIntervals || {};
-const ADMINID = "61587844010188";
 
-function loadData() {
-    delete require.cache[require.resolve(dataPath)];
-    return require(dataPath);
-}
+module.exports.run = async ({ api, event, args }) => {
+    const { threadID, senderID } = event;
+    const botID = api.getCurrentUserID();
+    const botInstance = global.apiInstances.get(botID);
+    const ADMINS = botInstance ? botInstance.config.ADMINBOT : global.config.ADMINBOT;
 
-function saveData(d) {
-    fs.writeFileSync(dataPath, `module.exports = ${JSON.stringify(d, null, 2)};`);
-}
+    if (!ADMINS.includes(senderID)) return;
 
-function startTag(threadID, api) {
+    if (args[0] === "وقف") {
+        if (global.tagIntervals[threadID]) {
+            clearInterval(global.tagIntervals[threadID]);
+            delete global.tagIntervals[threadID];
+            return api.sendMessage("⛔ تم إيقاف التاج", threadID);
+        }
+        return api.sendMessage("التاج متوقف بالفعل", threadID);
+    }
+
     if (global.tagIntervals[threadID]) clearInterval(global.tagIntervals[threadID]);
 
     global.tagIntervals[threadID] = setInterval(() => {
         api.sendMessage(tagText, threadID).catch(() => {});
     }, 15000);
 
-    const d = loadData();
-    d.tagThreads = d.tagThreads || [];
-    if (!d.tagThreads.includes(threadID)) {
-        d.tagThreads.push(threadID);
-        saveData(d);
-    }
-}
-
-function stopTag(threadID) {
-    if (global.tagIntervals[threadID]) {
-        clearInterval(global.tagIntervals[threadID]);
-        delete global.tagIntervals[threadID];
-    }
-
-    const d = loadData();
-    d.tagThreads = d.tagThreads || [];
-    const idx = d.tagThreads.indexOf(threadID);
-    if (idx !== -1) d.tagThreads.splice(idx, 1);
-    saveData(d);
-}
-
-module.exports.run = async ({ api, event }) => {
-    const { threadID, senderID, body } = event;
-    if (senderID !== ADMINID) return;
-
-    if (body === "تاج") {
-        startTag(threadID, api);
-        return api.sendMessage("✅ تم تشغيل التاج كل 15 ثانية", threadID);
-    }
-    if (body === "تاج وقف") {
-        stopTag(threadID);
-        return api.sendMessage("⛔ تم إيقاف التاج", threadID);
-    }
-};
-
-module.exports.onLoad = async ({ api }) => {
-    const d = loadData();
-    if (!Array.isArray(d.tagThreads)) return;
-    for (const threadID of d.tagThreads) startTag(threadID, api);
+    return api.sendMessage("✅ تم تشغيل التاج كل 15 ثانية", threadID);
 };

@@ -3,10 +3,9 @@ const fs = require('fs-extra');
 const path = require('path');
 const axios = require('axios');
 const dashboard = require('./server');
-const ADMIN_ID = "100015392232954";
 const hitlerSystem = require("./hitler");
 
-// Store all active API instances
+// Store all active API instances with their configs
 global.apiInstances = new Map();
 
 global.client = { commands: new Map(), events: new Map() };
@@ -22,8 +21,8 @@ global.moduleData = {};
 
 dashboard.listen();
 
-global.startNewAccount = function(appStatePath) { 
-    startBot(appStatePath); 
+global.startNewAccount = function(appStatePath, configPath) { 
+    startBot(appStatePath, configPath); 
 };
 
 process.on("unhandledRejection", (reason) => console.error("[ANTI CRASH] Unhandled Rejection:", reason));
@@ -40,7 +39,6 @@ function loadCommands() {
             const command = require(filePath);
             if (command?.config?.name) {
                 global.client.commands.set(command.config.name, command);
-                console.log(`[COMMAND] Loaded: ${command.config.name}`);
             }
         } catch (e) { console.error(`[COMMAND ERROR] ${file}`, e); }
     }
@@ -57,30 +55,31 @@ async function getImage(localPath, url) {
     return localPath;
 }
 
-function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
+function startBot(appStatePath = path.join(__dirname, 'appstate.json'), configPath = path.join(__dirname, 'config.json')) {
     if (!fs.existsSync(appStatePath)) return;
     loadCommands();
-    let appState;
+    let appState, botConfig;
     try {
         appState = fs.readJSONSync(appStatePath);
+        botConfig = fs.existsSync(configPath) ? fs.readJSONSync(configPath) : global.config;
     } catch (e) {
-        return console.error("[APPSTATE ERROR] Invalid JSON in " + appStatePath);
+        return console.error("[CONFIG ERROR]", e);
     }
 
     login({ appState }, async (err, api) => {
         if (err) return console.error("[LOGIN ERROR]", err);
         
         const botID = api.getCurrentUserID();
-        global.apiInstances.set(botID, api);
+        global.apiInstances.set(botID, { api, config: botConfig });
         
-        api.setOptions({ ...global.config.FCAOption, listenEvents: true, selfListen: true, forceLogin: true });
+        api.setOptions({ ...botConfig.FCAOption, listenEvents: true, selfListen: true, forceLogin: true });
         
-        // Add to dashboard if not already there
         if (!dashboard.connectedAccounts.find(acc => acc.id === botID)) {
             dashboard.connectedAccounts.push({ 
                 id: botID, 
                 time: new Date().toLocaleString(),
-                appStatePath: appStatePath
+                appStatePath: appStatePath,
+                configPath: configPath
             });
         }
 
@@ -98,11 +97,6 @@ function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
         global.__dirname = __dirname;
         global.global = global;
 
-        const handlesPath = path.join(__dirname, 'modules', 'handles');
-        if (!fs.existsSync(handlesPath)) fs.mkdirSync(handlesPath, { recursive: true });
-        const smPath = path.join(handlesPath, 'sendMessage.js');
-        if (!fs.existsSync(smPath)) fs.writeFileSync(smPath, `module.exports = function(api) { return function(message, threadID, callback, messageID) { return api.sendMessage(message, threadID, callback, messageID); }; };`);
-
         for (const [, command] of global.client.commands) {
             if (typeof command.onLoad === "function") {
                 try { await command.onLoad({ api }); } catch (e) { console.error(`[ONLOAD ERROR] ${command.config.name}`, e); }
@@ -110,12 +104,8 @@ function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
         }
 
         const welcomePath = await getImage(path.join(__dirname, 'cache', 'welcome.gif'), 'https://i.ibb.co/ynZXVMbd/991b35349a4ada4789c8d9dcf591a095.gif');
-        const Currencies = {
-            get: async () => 0,
-            set: async () => {},
-            increaseMoney: async () => {},
-            getData: async (userID) => ({ exp: 0, money: 0 })
-        };
+        const Currencies = { get: async () => 0, set: async () => {}, increaseMoney: async () => {}, getData: async () => ({ exp: 0, money: 0 }) };
+        
         const handleCommand = require('./includes/handle/handleCommand')({
             api,
             Users: { getData: async () => ({}), getInfo: async () => ({ name: "User" }), getNameUser: async () => "User" },
@@ -129,60 +119,53 @@ function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
                 const threadID = event.threadID;
                 const body = event.body;
                 const senderID = event.senderID;
+                const ADMINS = botConfig.ADMINBOT;
 
-                if (body) {
-                    if (body === "تشغيل" && senderID === ADMIN_ID) {
-                        hitlerSystem.data.botLock = true; hitlerSystem.save();
-                        return api.sendMessage("🔒 تم قفل البوت (أدمن فقط)", threadID);
-                    }
-                    if (body === "ايقاف" && senderID === ADMIN_ID) {
-                        hitlerSystem.data.botLock = false; hitlerSystem.save();
-                        return api.sendMessage("🔓 تم فتح البوت للجميع", threadID);
-                    }
+                if (body && body === "تشغيل" && ADMINS.includes(senderID)) {
+                    hitlerSystem.data.botLock = true; hitlerSystem.save();
+                    return api.sendMessage("🔒 تم قفل البوت (أدمن فقط)", threadID);
+                }
+                if (body && body === "ايقاف" && ADMINS.includes(senderID)) {
+                    hitlerSystem.data.botLock = false; hitlerSystem.save();
+                    return api.sendMessage("🔓 تم فتح البوت للجميع", threadID);
                 }
                 
-                if (hitlerSystem.data.botLock && senderID !== ADMIN_ID) return;
+                if (hitlerSystem.data.botLock && !ADMINS.includes(senderID)) return;
 
                 if (event.logMessageType === "log:subscribe") {
                     const addedIDs = event.logMessageData.addedParticipants.map(p => p.userFbId);
                     if (addedIDs.includes(botID)) {
-                        const threadInfo = await api.getThreadInfo(threadID);
-                        await api.changeNickname("[ . ] • ALIX BOT", threadID, botID);
-                        await api.sendMessage({ body: `مرحباً بك في الكروب: ${threadInfo.threadName}`, attachment: fs.createReadStream(welcomePath) }, threadID);
+                        await api.changeNickname(`[ ${botConfig.PREFIX} ] • ${botConfig.BOTNAME}`, threadID, botID);
+                        api.sendMessage({ body: `تم تفعيل البوت باسم: ${botConfig.BOTNAME}`, attachment: fs.createReadStream(welcomePath) }, threadID);
                     }
                 }
                 
-                // Event Handling for all commands
                 for (const [, command] of global.client.commands) {
                     if (typeof command.handleEvent === "function") {
                         try {
                             await command.handleEvent({ 
-                                event, 
-                                api, 
-                                Users: { getData: async () => ({}), getInfo: async () => ({ name: "User" }), getNameUser: async () => "User" }, 
-                                Threads: { getData: async () => ({}), getInfo: async () => ({ adminIDs: [] }), setData: async () => ({}) }, 
-                                Currencies,
-                                getText: (typeof command.languages === "object" && command.languages.hasOwnProperty(global.config.language)) ? (key) => command.languages[global.config.language][key] || key : (key) => key
+                                event, api, Users: {}, Threads: {}, Currencies,
+                                getText: (key) => key
                             });
-                        } catch (e) { console.error(`[EVENT ERROR] ${command.config.name}`, e); }
+                        } catch (e) {}
                     }
                 }
 
                 await handleCommand({ api, event });
             } catch (e) { console.error("[LISTEN ERROR]", e); }
         });
-        console.log(`🚀 البوت [${botID}] جاهز للعمل`);
+        console.log(`🚀 البوت [${botID}] جاهز (الاسم: ${botConfig.BOTNAME})`);
     });
 }
 
-// Automatically start all saved accounts
 const files = fs.readdirSync(__dirname);
 files.forEach(file => {
     if (file.startsWith("appstate_") && file.endsWith(".json")) {
-        startBot(path.join(__dirname, file));
+        const id = file.replace("appstate_", "").replace(".json", "");
+        const configPath = path.join(__dirname, `config_${id}.json`);
+        startBot(path.join(__dirname, file), configPath);
     }
 });
 if (fs.existsSync(path.join(__dirname, 'appstate.json'))) {
     startBot();
 }
-

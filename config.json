@@ -1,5 +1,5 @@
 {
-    "language": "vi",
+    "language": "ar",
     "DeveloperMode": false,
     "autoCreateDB": true,
     "iconUnsend": {
@@ -12,16 +12,14 @@
     "allowInbox": false,
     "commandDisabled": [],
     "eventDisabled": [],
-    "BOTNAME": "ALIX BOT",
-    "AMDIN_NAME": "اليكسي السوري",
-    "FACEBOOK_ADMIN": "https://www.facebook.com/profile.php?id=61586285835498",
+    "BOTNAME": "اليكسي بوت",
+    "AMDIN_NAME": "أربرت السوري",
+    "FACEBOOK_ADMIN": "https://www.facebook.com/profile.php?id=61587844010188",
     "PREFIX": ".",
     "ADMINBOT": [
-        "100015392232954"
+        "61587844010188"
     ],
-    "NDH": [
-        ""
-    ],
+    "NDH": [],
     "DATABASE": {
         "sqlite": {
             "storage": "data.sqlite"

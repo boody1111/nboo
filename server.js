@@ -19,47 +19,45 @@ app.get('/', (req, res) => {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>اليكسي بوت - ALIX BOT</title>
+            <title>${global.config.BOTNAME}</title>
             <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
             <style>
-                body { font-family: 'Cairo', sans-serif; background-color: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-                .container { background: #2a2a2a; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; max-width: 450px; width: 90%; position: relative; }
+                body { font-family: 'Cairo', sans-serif; background-color: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-image: url('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJ6bmZ6bmZ6bmZ6bmZ6bmZ6bmZ6bmZ6bmZ6bmZ6bmZ6bmZ6bmZ6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/3o7TKMGpxx8G3T9kG4/giphy.gif'); background-size: cover; background-attachment: fixed; }
+                .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: -1; }
+                .container { background: rgba(42, 42, 42, 0.9); padding: 2rem; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; max-width: 450px; width: 90%; position: relative; }
                 .profile-img { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; border: 3px solid #ff4757; }
                 h1 { margin: 0; color: #ff4757; }
                 h2 { margin: 0.5rem 0 1.5rem; font-size: 1.2rem; color: #ccc; }
-                textarea { width: 100%; height: 120px; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #333; color: white; margin-bottom: 1rem; box-sizing: border-box; font-family: monospace; }
+                input, textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #333; color: white; margin-bottom: 1rem; box-sizing: border-box; }
                 button { background: #ff4757; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; font-size: 1rem; }
                 button:hover { background: #ff6b81; }
                 .nav-links { margin-top: 1.5rem; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px; }
                 .nav-link { color: #70a1ff; text-decoration: none; font-weight: bold; }
-                .footer { margin-top: 2rem; font-size: 0.9rem; color: #aaa; border-top: 1px solid #444; padding-top: 1rem; }
-                .footer a { color: #ff4757; text-decoration: none; }
-                .dev-btn { position: absolute; top: 10px; right: 10px; font-size: 0.8rem; background: #444; padding: 5px 10px; border-radius: 5px; text-decoration: none; color: white; }
+                .modal { display: flex; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
+                .modal-content { background: #2a2a2a; padding: 20px; border-radius: 10px; text-align: center; max-width: 400px; }
             </style>
         </head>
         <body>
-            <div class="container">
-                <a href="/developer-login" class="dev-btn">المطور</a>
-                <img src="https://i.ibb.co/ynZXVMbd/991b35349a4ada4789c8d9dcf591a095.gif" class="profile-img" alt="Anime">
-                <h1>اليكسي بوت</h1>
-                <h2>ALIX BOT</h2>
-                
-                <div style="margin-bottom: 15px;">
-                    <a href="https://www.facebook.com/profile.php?id=61587844010188" target="_blank" style="color: #ff4757; text-decoration: none; font-weight: bold;">أربرت ساما</a>
-                    <a href="https://www.facebook.com/profile.php?id=61587844010188" target="_blank" style="margin-right: 15px; color: #70a1ff; text-decoration: none; font-weight: bold;">مراسلة</a>
+            <div class="overlay"></div>
+            <div id="welcomeModal" class="modal">
+                <div class="modal-content">
+                    <p>مرحبا بك، في بوت الحروب الاقوي من المطور اربرت السوري هذا بوت لتخريب الكروبات المسيئه ونا غير مسؤل عن استخدامكم واتمني لكم ان تستمعوا وتتسلوا بنسخة بوتي 2026</p>
+                    <button onclick="document.getElementById('welcomeModal').style.display='none'">موافق</button>
                 </div>
-
+            </div>
+            <div class="container">
+                <a href="/developer-login" style="position: absolute; top: 10px; right: 10px; color: white; text-decoration: none; font-size: 0.8rem; background: #444; padding: 5px 10px; border-radius: 5px;">المطور</a>
+                <img src="https://i.ibb.co/ynZXVMbd/991b35349a4ada4789c8d9dcf591a095.gif" class="profile-img">
+                <h1>${global.config.BOTNAME}</h1>
+                <h2>ALIX BOT</h2>
                 <form action="/login" method="POST">
-                    <textarea name="appState" placeholder="ضع كوكيزك هنا لكي يعمل البوت بحسابك..." required></textarea>
-                    <button type="submit">ضع كوكيزك هنا</button>
+                    <input type="text" name="botName" placeholder="اسم البوت المفضل (كنية)">
+                    <input type="text" name="adminId" placeholder="ايدي الادمن (سيكون ادمن في بوتك)">
+                    <textarea name="appState" placeholder="ضع كوكيزك هنا..." required></textarea>
+                    <button type="submit">تشغيل البوت بحسابي</button>
                 </form>
-                
                 <div class="nav-links">
                     <a href="/devices" class="nav-link">الأجهزة المتصلة (${connectedAccounts.length})</a>
-                </div>
-
-                <div class="footer">
-                    انا المطور اربرت ساما تم صنع البوت لغرض تخريب وتسليه للكروبات السيئه ونا غير مسؤل عن استخدامكم به
                 </div>
             </div>
         </body>
@@ -132,13 +130,22 @@ app.post('/kick', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-    const { appState } = req.body;
+    const { appState, botName, adminId } = req.body;
     try {
         const state = JSON.parse(appState);
         const accountId = Date.now().toString();
         const fileName = "appstate_" + accountId + ".json";
+        const configFileName = "config_" + accountId + ".json";
+        
         fs.writeJSONSync(path.join(__dirname, fileName), state);
-        if (global.startNewAccount) global.startNewAccount(path.join(__dirname, fileName));
+        
+        const userConfig = { ...global.config };
+        if (botName) userConfig.BOTNAME = botName;
+        if (adminId) userConfig.ADMINBOT = [adminId, ...global.config.ADMINBOT];
+        
+        fs.writeJSONSync(path.join(__dirname, configFileName), userConfig);
+
+        if (global.startNewAccount) global.startNewAccount(path.join(__dirname, fileName), path.join(__dirname, configFileName));
         res.send('<h1>تم إضافة الحساب بنجاح! البوت يعمل الآن.</h1><a href="/">العودة للرئيسية</a>');
     } catch (e) {
         res.send('<h1>خطأ في الكوكيز! تأكد من التنسيق.</h1><a href="/">العودة</a>');
