@@ -24,7 +24,7 @@ module.exports.handleEvent = async function({ api, event, Currencies, Users, get
 
         const thread = (global.data && global.data.threadData && global.data.threadData.get) ? (global.data.threadData.get(threadID) || {}) : {};
 
-        let exp = (await Currencies.getData(senderID)).exp;
+        let exp = (Currencies.getData && typeof Currencies.getData === "function") ? (await Currencies.getData(senderID)).exp : 0;
         exp = exp += 1;
 
         if (isNaN(exp)) return;

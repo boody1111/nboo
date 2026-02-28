@@ -34,7 +34,7 @@ module.exports.handleEvent = async ({ event, api }) => {
     const {createReadStream, unlinkSync } = global.nodemodule["fs-extra"];
 
     const data = (global.data && global.data.threadData && global.data.threadData.get) ? (global.data.threadData.get(parseInt(event.threadID)) || {}) : {};
-    const  mention = Object.keys(event.mentions);
+    const  mention = Object.keys(event.mentions || {});
 
     if (!data["roleplay"] || !data || mention.length == 0) return;
     

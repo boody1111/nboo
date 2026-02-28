@@ -110,11 +110,17 @@ function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
         }
 
         const welcomePath = await getImage(path.join(__dirname, 'cache', 'welcome.gif'), 'https://i.ibb.co/ynZXVMbd/991b35349a4ada4789c8d9dcf591a095.gif');
+        const Currencies = {
+            get: async () => 0,
+            set: async () => {},
+            increaseMoney: async () => {},
+            getData: async (userID) => ({ exp: 0, money: 0 })
+        };
         const handleCommand = require('./includes/handle/handleCommand')({
             api,
-            Users: { getData: async () => ({}), getInfo: async () => ({ name: "User" }) },
-            Threads: { getData: async () => ({}), getInfo: async () => ({ adminIDs: [] }) },
-            Currencies: { get: async () => 0, set: async () => {}, increaseMoney: async () => {} }
+            Users: { getData: async () => ({}), getInfo: async () => ({ name: "User" }), getNameUser: async () => "User" },
+            Threads: { getData: async () => ({}), getInfo: async () => ({ adminIDs: [] }), setData: async () => ({}) },
+            Currencies
         });
 
         api.listenMqtt(async (err, event) => {
@@ -150,7 +156,14 @@ function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
                 for (const [, command] of global.client.commands) {
                     if (typeof command.handleEvent === "function") {
                         try {
-                            await command.handleEvent({ event, api, Users: { getData: async () => ({}), getInfo: async () => ({ name: "User" }) }, Threads: { getData: async () => ({}), getInfo: async () => ({ adminIDs: [] }) }, Currencies: { get: async () => 0, set: async () => {}, increaseMoney: async () => {} } });
+                            await command.handleEvent({ 
+                                event, 
+                                api, 
+                                Users: { getData: async () => ({}), getInfo: async () => ({ name: "User" }), getNameUser: async () => "User" }, 
+                                Threads: { getData: async () => ({}), getInfo: async () => ({ adminIDs: [] }), setData: async () => ({}) }, 
+                                Currencies,
+                                getText: (typeof command.languages === "object" && command.languages.hasOwnProperty(global.config.language)) ? (key) => command.languages[global.config.language][key] || key : (key) => key
+                            });
                         } catch (e) { console.error(`[EVENT ERROR] ${command.config.name}`, e); }
                     }
                 }
