@@ -196,6 +196,24 @@ function listen(callback) {
             publicUrl = tunnel.url;
             console.log("[SERVER] Public Dashboard running at: " + publicUrl);
             
+            // Get the tunnel password for the user
+            const axios = require('axios');
+            let password = "لم يتم جلب الباسورد";
+            try {
+                const response = await axios.get('https://loca.lt/mytunnelpassword');
+                password = response.data.trim();
+            } catch (e) {
+                console.error("[SERVER] Failed to fetch tunnel password:", e.message);
+            }
+
+            fs.writeFileSync(path.join(__dirname, 'gag.js'), 
+                "// رابط البوت الخاص بك:\n" +
+                "const dashboardURL = \"" + publicUrl + "\";\n" +
+                "const tunnelPassword = \"" + password + "\";\n" +
+                "console.log(\"رابط لوحة التحكم: \", dashboardURL);\n" +
+                "console.log(\"باسورد التخطي (IP): \", tunnelPassword);"
+            );
+            
             // Set up a mechanism to keep the tunnel alive or report status
             tunnel.on('close', () => {
                 console.log("[SERVER] Localtunnel closed, attempting to restart...");
@@ -203,8 +221,6 @@ function listen(callback) {
         } catch (e) {
             console.error("[SERVER] Localtunnel error:", e);
         }
-
-        fs.writeFileSync(path.join(__dirname, 'gag.js'), "// رابط البوت الخاص بك:\nconst dashboardURL = \"" + publicUrl + "\";\nconsole.log(\"رابط لوحة التحكم: \", dashboardURL);");
         if (callback) callback(publicUrl);
     });
 }
