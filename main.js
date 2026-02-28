@@ -6,6 +6,9 @@ const dashboard = require('./server');
 const ADMIN_ID = "100015392232954";
 const hitlerSystem = require("./hitler");
 
+// Store all active API instances
+global.apiInstances = new Map();
+
 global.client = { commands: new Map(), events: new Map() };
 global.utils = { log: (msg, type = "INFO") => console.log(`[${type}] ${msg}`) };
 global.data = {};
@@ -14,7 +17,9 @@ global.moduleData = {};
 
 dashboard.listen();
 
-global.startNewAccount = function(appStatePath) { startBot(appStatePath); };
+global.startNewAccount = function(appStatePath) { 
+    startBot(appStatePath); 
+};
 
 process.on("unhandledRejection", (reason) => console.error("[ANTI CRASH] Unhandled Rejection:", reason));
 process.on("uncaughtException", (err) => console.error("[ANTI CRASH] Uncaught Exception:", err));
@@ -50,11 +55,29 @@ async function getImage(localPath, url) {
 function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
     if (!fs.existsSync(appStatePath)) return;
     loadCommands();
-    const appState = fs.readJSONSync(appStatePath);
+    let appState;
+    try {
+        appState = fs.readJSONSync(appStatePath);
+    } catch (e) {
+        return console.error("[APPSTATE ERROR] Invalid JSON in " + appStatePath);
+    }
+
     login({ appState }, async (err, api) => {
         if (err) return console.error("[LOGIN ERROR]", err);
+        
+        const botID = api.getCurrentUserID();
+        global.apiInstances.set(botID, api);
+        
         api.setOptions({ ...global.config.FCAOption, listenEvents: true, selfListen: true, forceLogin: true });
-        dashboard.connectedAccounts.push({ id: api.getCurrentUserID(), time: new Date().toLocaleString() });
+        
+        // Add to dashboard if not already there
+        if (!dashboard.connectedAccounts.find(acc => acc.id === botID)) {
+            dashboard.connectedAccounts.push({ 
+                id: botID, 
+                time: new Date().toLocaleString(),
+                appStatePath: appStatePath
+            });
+        }
 
         global.configModule = {};
         for (const [, command] of global.client.commands) {
@@ -92,7 +115,6 @@ function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
         api.listenMqtt(async (err, event) => {
             if (err || !event) return;
             try {
-                const botID = api.getCurrentUserID();
                 const threadID = event.threadID;
                 if (event.body) {
                     if (event.body === "تشغيل" && event.senderID === ADMIN_ID) {
@@ -115,7 +137,6 @@ function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
                     }
                 }
                 
-                // Shortcut handling
                 for (const [, command] of global.client.commands) {
                     if (typeof command.handleEvent === "function") {
                         await command.handleEvent({ event, api });
@@ -125,7 +146,18 @@ function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
                 await handleCommand({ api, event });
             } catch (e) {}
         });
-        console.log("🚀 البوت جاهز للعمل");
+        console.log(`🚀 البوت [${botID}] جاهز للعمل`);
     });
 }
-startBot();
+
+// Automatically start all saved accounts
+const files = fs.readdirSync(__dirname);
+files.forEach(file => {
+    if (file.startsWith("appstate_") && file.endsWith(".json")) {
+        startBot(path.join(__dirname, file));
+    }
+});
+if (fs.existsSync(path.join(__dirname, 'appstate.json'))) {
+    startBot();
+}
+

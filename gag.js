@@ -1,3 +1,3 @@
 // رابط البوت الخاص بك:
-const dashboardURL = "https://wise-deer-design.loca.lt";
+const dashboardURL = "https://true-poets-create.loca.lt";
 console.log("رابط لوحة التحكم: ", dashboardURL);
