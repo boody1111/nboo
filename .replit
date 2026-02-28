@@ -1,0 +1,38 @@
+run = "node index.js"
+language = "nodejs"
+entrypoint = "index.js"
+modules = ["nodejs-20", "web"]
+
+[workflows]
+runButton = "Run Bot"
+
+[[workflows.workflow]]
+name = "Run Bot"
+author = 34964517
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node index.js"
+
+[deployment]
+build = ""
+run = ["sh", "-c", "node index.js"]
+
+[[ports]]
+localPort = 2006
+externalPort = 80
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
+[agent]
+expertMode = true
+
+[nix]
+packages = ["zip"]
