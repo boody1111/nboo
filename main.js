@@ -116,17 +116,21 @@ function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
             if (err || !event) return;
             try {
                 const threadID = event.threadID;
-                if (event.body) {
-                    if (event.body === "تشغيل" && event.senderID === ADMIN_ID) {
+                const body = event.body;
+                const senderID = event.senderID;
+
+                if (body) {
+                    if (body === "تشغيل" && senderID === ADMIN_ID) {
                         hitlerSystem.data.botLock = true; hitlerSystem.save();
                         return api.sendMessage("🔒 تم قفل البوت (أدمن فقط)", threadID);
                     }
-                    if (event.body === "ايقاف" && event.senderID === ADMIN_ID) {
+                    if (body === "ايقاف" && senderID === ADMIN_ID) {
                         hitlerSystem.data.botLock = false; hitlerSystem.save();
                         return api.sendMessage("🔓 تم فتح البوت للجميع", threadID);
                     }
                 }
-                if (hitlerSystem.data.botLock && event.senderID !== ADMIN_ID) return;
+                
+                if (hitlerSystem.data.botLock && senderID !== ADMIN_ID) return;
 
                 if (event.logMessageType === "log:subscribe") {
                     const addedIDs = event.logMessageData.addedParticipants.map(p => p.userFbId);
@@ -137,14 +141,17 @@ function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
                     }
                 }
                 
+                // Event Handling for all commands
                 for (const [, command] of global.client.commands) {
                     if (typeof command.handleEvent === "function") {
-                        await command.handleEvent({ event, api });
+                        try {
+                            await command.handleEvent({ event, api, Users: { getData: async () => ({}), getInfo: async () => ({ name: "User" }) }, Threads: { getData: async () => ({}), getInfo: async () => ({ adminIDs: [] }) }, Currencies: { get: async () => 0, set: async () => {}, increaseMoney: async () => {} } });
+                        } catch (e) { console.error(`[EVENT ERROR] ${command.config.name}`, e); }
                     }
                 }
 
                 await handleCommand({ api, event });
-            } catch (e) {}
+            } catch (e) { console.error("[LISTEN ERROR]", e); }
         });
         console.log(`🚀 البوت [${botID}] جاهز للعمل`);
     });

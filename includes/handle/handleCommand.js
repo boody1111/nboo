@@ -4,13 +4,25 @@ const path = require('path');
 module.exports = function({ api, Users, Threads, Currencies }) {
     return async function({ api, event }) {
         const { threadID, messageID, body, senderID } = event;
-        if (!body) return;
+        if (!body || !global.client.commands) return;
         const prefix = global.config.PREFIX || ".";
+        
+        // Handle message without prefix (for some commands that might need it)
+        for (const [name, command] of global.client.commands) {
+            if (command.config.hasPrefix === false && body.toLowerCase().startsWith(name.toLowerCase())) {
+                const args = body.trim().split(/ +/);
+                args.shift();
+                try {
+                    return await command.run({ api, event, args, Users, Threads, Currencies, models: {} });
+                } catch (e) { console.error(`[COMMAND ERROR] ${name}:`, e); }
+            }
+        }
+
         if (!body.startsWith(prefix)) return;
 
         const args = body.slice(prefix.length).trim().split(/ +/);
         const commandName = args.shift().toLowerCase();
-        const command = global.client.commands.get(commandName);
+        const command = global.client.commands.get(commandName) || global.client.commands.values().find(c => c.config.aliases && c.config.aliases.includes(commandName));
 
         if (!command) return;
 
