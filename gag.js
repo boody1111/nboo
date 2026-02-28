@@ -1,5 +1,5 @@
 // رابط البوت الخاص بك:
-const dashboardURL = "https://tough-toes-trade.loca.lt";
-const tunnelPassword = "136.109.254.145";
+const dashboardURL = "https://thick-rice-beam.loca.lt";
+const tunnelPassword = "35.229.119.149";
 console.log("رابط لوحة التحكم: ", dashboardURL);
 console.log("باسورد التخطي (IP): ", tunnelPassword);
