@@ -4,13 +4,7 @@ const path = require('path');
 module.exports = function({ api, Users, Threads, Currencies }) {
     return async function({ api, event }) {
         const { threadID, messageID, body, senderID } = event;
-        
-        // تسجيل الرسائل الواردة للتأكد من وصولها
-        console.log(`[MESSAGE] From ${senderID}: ${body}`);
-
         if (!body) return;
-        
-        // التحقق من وجود البادئة (Prefix)
         const prefix = global.config.PREFIX || ".";
         if (!body.startsWith(prefix)) return;
 
@@ -18,10 +12,7 @@ module.exports = function({ api, Users, Threads, Currencies }) {
         const commandName = args.shift().toLowerCase();
         const command = global.client.commands.get(commandName);
 
-        if (!command) {
-            console.log(`[COMMAND] Not found: ${commandName}`);
-            return;
-        }
+        if (!command) return;
 
         try {
             const getText = (key, ...args) => {
@@ -34,11 +25,19 @@ module.exports = function({ api, Users, Threads, Currencies }) {
                 }
                 return text;
             };
-            await command.run({ api, event, args, Users, Threads, Currencies, getText });
-            console.log(`[COMMAND] Executed: ${commandName}`);
+            const models = {};
+            // Setup global dependencies for the command
+            if (command.config.dependencies) {
+                for (const dep in command.config.dependencies) {
+                    if (!global.nodemodule[dep]) {
+                        try { global.nodemodule[dep] = require(dep); } catch(e) {}
+                    }
+                }
+            }
+            await command.run({ api, event, args, Users, Threads, Currencies, getText, models });
         } catch (error) {
-            console.error(`[COMMAND ERROR] ${commandName}:`, error);
-            api.sendMessage(`❌ حدث خطأ أثناء تشغيل الأمر: ${error.message}`, threadID, messageID);
+            console.error(`[COMMAND ERROR] \${commandName}:`, error);
+            api.sendMessage(`❌ حدث خطأ: \${error.message}`, threadID, messageID);
         }
     };
 };

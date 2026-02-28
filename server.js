@@ -1,3 +1,4 @@
+const localtunnel = require('localtunnel');
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -9,7 +10,6 @@ const port = process.env.PORT || 3000;
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// قائمة الحسابات المتصلة
 let connectedAccounts = [];
 
 app.get('/', (req, res) => {
@@ -22,71 +22,16 @@ app.get('/', (req, res) => {
             <title>اليكسي بوت - ALIX BOT</title>
             <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
             <style>
-                body {
-                    font-family: 'Cairo', sans-serif;
-                    background-color: #1a1a1a;
-                    color: white;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    min-height: 100vh;
-                    margin: 0;
-                }
-                .container {
-                    background: #2a2a2a;
-                    padding: 2rem;
-                    border-radius: 15px;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-                    text-align: center;
-                    max-width: 450px;
-                    width: 90%;
-                }
-                img {
-                    width: 150px;
-                    height: 150px;
-                    border-radius: 50%;
-                    object-fit: cover;
-                    margin-bottom: 1rem;
-                    border: 3px solid #ff4757;
-                }
+                body { font-family: 'Cairo', sans-serif; background-color: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+                .container { background: #2a2a2a; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; max-width: 450px; width: 90%; }
+                img { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; border: 3px solid #ff4757; }
                 h1 { margin: 0; color: #ff4757; }
                 h2 { margin: 0.5rem 0 1.5rem; font-size: 1.2rem; color: #ccc; }
-                textarea {
-                    width: 100%;
-                    height: 120px;
-                    padding: 10px;
-                    border-radius: 5px;
-                    border: 1px solid #444;
-                    background: #333;
-                    color: white;
-                    margin-bottom: 1rem;
-                    box-sizing: border-box;
-                    font-family: monospace;
-                }
-                button {
-                    background: #ff4757;
-                    color: white;
-                    border: none;
-                    padding: 12px 20px;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    font-weight: bold;
-                    width: 100%;
-                    transition: 0.3s;
-                    font-size: 1rem;
-                }
+                textarea { width: 100%; height: 120px; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #333; color: white; margin-bottom: 1rem; box-sizing: border-box; font-family: monospace; }
+                button { background: #ff4757; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; font-size: 1rem; }
                 button:hover { background: #ff6b81; }
-                .nav-links {
-                    margin-top: 1.5rem;
-                    display: flex;
-                    justify-content: space-around;
-                }
-                .nav-link {
-                    color: #70a1ff;
-                    text-decoration: none;
-                    font-weight: bold;
-                }
+                .nav-links { margin-top: 1.5rem; display: flex; justify-content: space-around; }
+                .nav-link { color: #70a1ff; text-decoration: none; font-weight: bold; }
             </style>
         </head>
         <body>
@@ -112,13 +57,9 @@ app.post('/login', (req, res) => {
     try {
         const state = JSON.parse(appState);
         const accountId = Date.now().toString();
-        const fileName = `appstate_${accountId}.json`;
+        const fileName = "appstate_" + accountId + ".json";
         fs.writeJSONSync(path.join(__dirname, fileName), state);
-        
-        if (global.startNewAccount) {
-            global.startNewAccount(path.join(__dirname, fileName));
-        }
-
+        if (global.startNewAccount) global.startNewAccount(path.join(__dirname, fileName));
         res.send('<h1>تم إضافة الحساب بنجاح! البوت يعمل الآن.</h1><a href="/">العودة للرئيسية</a>');
     } catch (e) {
         res.send('<h1>خطأ في الكوكيز! تأكد من التنسيق.</h1><a href="/">العودة</a>');
@@ -135,9 +76,7 @@ app.get('/devices', (req, res) => {
             </div>
         </li>
     `).join('');
-    
     if (rows === '') rows = '<li>لا توجد حسابات نشطة حالياً</li>';
-
     res.send(`
         <!DOCTYPE html>
         <html lang="ar" dir="rtl">
@@ -166,20 +105,28 @@ app.get('/devices', (req, res) => {
 });
 
 function listen(callback) {
-    app.listen(port, () => {
-        let url = `http://localhost:${port}`;
+    app.listen(port, async () => {
+        let url = "http://localhost:" + port;
+        if (process.env.REPL_SLUG && process.env.REPL_OWNER) url = "https://" + process.env.REPL_SLUG + "." + process.env.REPL_OWNER + ".repl.co";
+        console.log("[SERVER] Local Dashboard running at: " + url);
+        let publicUrl = url;
         
-        if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-            url = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+        // Use localtunnel for public URL generation as requested
+        try {
+            const tunnel = await localtunnel({ port: port });
+            publicUrl = tunnel.url;
+            console.log("[SERVER] Public Dashboard running at: " + publicUrl);
+            
+            // Set up a mechanism to keep the tunnel alive or report status
+            tunnel.on('close', () => {
+                console.log("[SERVER] Localtunnel closed, attempting to restart...");
+            });
+        } catch (e) {
+            console.error("[SERVER] Localtunnel error:", e);
         }
-        
-        console.log(`[SERVER] Dashboard running at: ${url}`);
-        
-        // Provide alternative link for users who can't access .repl.co directly
-        const altUrl = process.env.REPL_SLUG ? `https://${process.env.REPL_ID}.id.repl.co` : url;
 
-        fs.writeFileSync(path.join(__dirname, 'gag.js'), `// رابط البوت الخاص بك:\nconst dashboardURL = "${url}";\nconst altDashboardURL = "${altUrl}";\nconsole.log("رابط لوحة التحكم الرئيسي: ", dashboardURL);\nconsole.log("رابط لوحة التحكم البديل: ", altDashboardURL);`);
-        if (callback) callback(url);
+        fs.writeFileSync(path.join(__dirname, 'gag.js'), "// رابط البوت الخاص بك:\nconst dashboardURL = \"" + publicUrl + "\";\nconsole.log(\"رابط لوحة التحكم: \", dashboardURL);");
+        if (callback) callback(publicUrl);
     });
 }
 
