@@ -11,7 +11,12 @@ global.apiInstances = new Map();
 
 global.client = { commands: new Map(), events: new Map() };
 global.utils = { log: (msg, type = "INFO") => console.log(`[${type}] ${msg}`) };
-global.data = {};
+global.data = {
+    threadData: new Map(),
+    userName: new Map(),
+    userStats: new Map(),
+    userData: new Map()
+};
 global.config = fs.readJSONSync(path.join(__dirname, 'config.json'));
 global.moduleData = {};
 

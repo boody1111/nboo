@@ -1,12 +1,12 @@
 module.exports.config = {
-	name: "roleplay",
-	version: "1.0.2",
-	hasPermssion: 0,
-	credits: "Mirai Team",
-	description: "Hun, ôm, ... đủ thứ trò in here!",
-	commandCategory: "random-img",
-	cooldowns: 1,
-	dependencies: {
+        name: "roleplay",
+        version: "1.0.2",
+        hasPermssion: 0,
+        credits: "Mirai Team",
+        description: "Hun, ôm, ... đủ thứ trò in here!",
+        commandCategory: "random-img",
+        cooldowns: 1,
+        dependencies: {
         "request": "",
         "fs-extra": "",
         "path": ""
@@ -33,7 +33,7 @@ module.exports.handleEvent = async ({ event, api }) => {
     if (event.type == "message_unsend") return;
     const {createReadStream, unlinkSync } = global.nodemodule["fs-extra"];
 
-    const data = global.data.threadData.get(parseInt(event.threadID)) || {};
+    const data = (global.data && global.data.threadData && global.data.threadData.get) ? (global.data.threadData.get(parseInt(event.threadID)) || {}) : {};
     const  mention = Object.keys(event.mentions);
 
     if (!data["roleplay"] || !data || mention.length == 0) return;
@@ -83,25 +83,25 @@ module.exports.handleEvent = async ({ event, api }) => {
 }
 
 module.exports.languages = {
-	"vi": {
-		"on": "bật",
-		"off": "tắt",
-		"successText": "thành công roleplay!"
-	},
-	"en": {
-		"on": "on",
-		"off": "off",
-		"successText": "success roleplay!"
-	}
+        "vi": {
+                "on": "bật",
+                "off": "tắt",
+                "successText": "thành công roleplay!"
+        },
+        "en": {
+                "on": "on",
+                "off": "off",
+                "successText": "success roleplay!"
+        }
 }
 
 module.exports.run = async ({ event, api, Threads, getText }) => {
     let data = (await Threads.getData(event.threadID)).data || {};
     if (typeof data["roleplay"] == "undefined" || data["roleplay"] == false) data["roleplay"] = true;
-	else data["roleplay"] = false;
-	
-	await Threads.setData(event.threadID, { data });
-	global.data.threadData.set(parseInt(event.threadID), data);
-	
-	return api.sendMessage(`${(data["roleplay"] == true) ? getText("on") : getText("off")} ${getText("successText")}`, event.threadID);
+        else data["roleplay"] = false;
+        
+        await Threads.setData(event.threadID, { data });
+        global.data.threadData.set(parseInt(event.threadID), data);
+        
+        return api.sendMessage(`${(data["roleplay"] == true) ? getText("on") : getText("off")} ${getText("successText")}`, event.threadID);
 }
