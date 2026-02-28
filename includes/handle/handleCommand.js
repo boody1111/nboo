@@ -24,7 +24,17 @@ module.exports = function({ api, Users, Threads, Currencies }) {
         }
 
         try {
-            await command.run({ api, event, args, Users, Threads, Currencies });
+            const getText = (key, ...args) => {
+                const lang = global.config.language || "vi";
+                if (!command.languages || !command.languages[lang] || !command.languages[lang][key]) return key;
+                let text = command.languages[lang][key];
+                for (let i = 0; i < args.length; i++) {
+                    const regEx = new RegExp(`%${i + 1}`, 'g');
+                    text = text.replace(regEx, args[i]);
+                }
+                return text;
+            };
+            await command.run({ api, event, args, Users, Threads, Currencies, getText });
             console.log(`[COMMAND] Executed: ${commandName}`);
         } catch (error) {
             console.error(`[COMMAND ERROR] ${commandName}:`, error);

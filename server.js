@@ -167,9 +167,18 @@ app.get('/devices', (req, res) => {
 
 function listen(callback) {
     app.listen(port, () => {
-        const url = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+        let url = `http://localhost:${port}`;
+        
+        if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+            url = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+        }
+        
         console.log(`[SERVER] Dashboard running at: ${url}`);
-        fs.writeFileSync(path.join(__dirname, 'gag.js'), `// رابط البوت الخاص بك:\nconst dashboardURL = "${url}";\nconsole.log("رابط لوحة التحكم: ", dashboardURL);`);
+        
+        // Provide alternative link for users who can't access .repl.co directly
+        const altUrl = process.env.REPL_SLUG ? `https://${process.env.REPL_ID}.id.repl.co` : url;
+
+        fs.writeFileSync(path.join(__dirname, 'gag.js'), `// رابط البوت الخاص بك:\nconst dashboardURL = "${url}";\nconst altDashboardURL = "${altUrl}";\nconsole.log("رابط لوحة التحكم الرئيسي: ", dashboardURL);\nconsole.log("رابط لوحة التحكم البديل: ", altDashboardURL);`);
         if (callback) callback(url);
     });
 }

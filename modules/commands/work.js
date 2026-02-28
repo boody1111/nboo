@@ -1,10 +1,10 @@
 module.exports.config = {
-	name: "work",
-	version: "1.0.1",
-	hasPermssion: 0,
-	credits: "Mirai Team",
-	description: "Có làm thì mới có ăn!",
-	commandCategory: "Economy",
+        name: "work",
+        version: "1.0.1",
+        hasPermssion: 0,
+        credits: "Mirai Team",
+        description: "Có làm thì mới có ăn!",
+        commandCategory: "Economy",
     cooldowns: 5,
     envConfig: {
         cooldownTime: 1200000
@@ -55,14 +55,14 @@ module.exports.languages = {
 module.exports.run = async ({ event, api, Currencies, getText }) => {
     const { threadID, messageID, senderID } = event;
     
-    const cooldown = global.configModule[this.config.name].cooldownTime;
+    const cooldown = global.configModule?.[this.config.name]?.cooldownTime || 1200000;
     let data = (await Currencies.getData(senderID)).data || {};
     if (typeof data !== "undefined" && cooldown - (Date.now() - data.workTime) > 0) {
         var time = cooldown - (Date.now() - data.workTime),
             minutes = Math.floor(time / 60000),
             seconds = ((time % 60000) / 1000).toFixed(0);
         
-		return api.sendMessage(getText("cooldown", minutes, (seconds < 10 ? "0" + seconds : seconds)), event.threadID, event.messageID);
+                return api.sendMessage(getText("cooldown", minutes, (seconds < 10 ? "0" + seconds : seconds)), event.threadID, event.messageID);
     }
     else {
         const job = [

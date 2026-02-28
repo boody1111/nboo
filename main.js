@@ -110,9 +110,21 @@ function startBot(appStatePath = path.join(__dirname, 'appstate.json')) {
         console.log("✅ تم تسجيل الدخول بنجاح في فيسبوك");
         dashboard.connectedAccounts.push({ id: api.getCurrentUserID(), time: new Date().toLocaleString() });
 
-        // =====================
-        // onLoad
-        // =====================
+        // Initialize configModule
+        global.configModule = {};
+        for (const [, command] of global.client.commands) {
+            if (command.config.envConfig) {
+                global.configModule[command.config.name] = command.config.envConfig;
+            }
+        }
+        
+        // Fix global dependencies
+        global.nodemodule = {
+            "fs-extra": require("fs-extra"),
+            "axios": require("axios"),
+            "path": require("path")
+        };
+
         for (const [, command] of global.client.commands) {
 
             if (typeof command.onLoad === "function") {
