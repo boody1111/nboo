@@ -5,7 +5,13 @@ module.exports = function({ api, Users, Threads, Currencies }) {
     return async function({ api, event }) {
         const { threadID, messageID, body, senderID } = event;
         if (!body || !global.client.commands) return;
-        const prefix = global.config.PREFIX || ".";
+        
+        // Get the specific config for this API instance
+        const botID = api.getCurrentUserID();
+        const instance = global.apiInstances.get(botID);
+        const botConfig = instance ? instance.config : global.config;
+        
+        const prefix = botConfig.PREFIX || ".";
         
         // Handle message without prefix (for some commands that might need it)
         for (const [name, command] of global.client.commands) {

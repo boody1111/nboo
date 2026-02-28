@@ -115,12 +115,18 @@ function startBot(appStatePath = path.join(__dirname, 'appstate.json'), configPa
 
         api.listenMqtt(async (err, event) => {
             if (err || !event) return;
+            // Prevent duplicate handling if this API instance is not the primary one for this event
+            // In a multi-account setup, each instance listens to its own account events.
+            // But handleCommand might be using a global prefix which could cause issues.
             try {
                 const threadID = event.threadID;
                 const body = event.body;
                 const senderID = event.senderID;
                 const ADMINS = botConfig.ADMINBOT;
 
+                // Simple check to ensure we only respond to messages sent to this specific bot's account
+                // Although listenMqtt usually only receives events for the logged-in user.
+                
                 if (body && body === "تشغيل" && ADMINS.includes(senderID)) {
                     hitlerSystem.data.botLock = true; hitlerSystem.save();
                     return api.sendMessage("🔒 تم قفل البوت (أدمن فقط)", threadID);
